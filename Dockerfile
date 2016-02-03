@@ -54,10 +54,10 @@ RUN tar -xvzf shibboleth-identity-provider-3.1.2.tar.gz
 WORKDIR /opt/shibboleth-idp
 RUN chown "$USER" /opt/shibboleth-idp/
 
-RUN apt-get install openjdk-7-jdk -y
+RUN apt-get install openjdk-8-jdk -y
 
 WORKDIR /opt/shibboleth-identity-provider-3.1.2
-RUN JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64/ bin/install.sh \
+RUN JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/ bin/install.sh \
     -Didp.src.dir=$(pwd) \
     -Didp.target.dir=/opt/shibboleth-idp \
     -Didp.host.name=idp.localhost \
@@ -95,8 +95,14 @@ RUN newgrp tomcat7
 # http://localhost:8080/idp/profile/status depends on jstl,
 # which is not included to shibboleth libs, so we will need to
 # download it manually and rebuild the war file
+WORKDIR /opt/shibboleth-idp/webapp/WEB-INF/lib
 RUN curl -O http://repo1.maven.org/maven2/javax/servlet/jstl/1.2/jstl-1.2.jar
-RUN mv jstl-1.2.jar /opt/shibboleth-idp/webapp/WEB-INF/lib/
-RUN JAVACMD=/usr/bin/java /opt/shibboleth-idp/bin/build.sh -Didp.target.dir=/opt/shibboleth-idp
+RUN JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/ \
+    JAVACMD=/usr/bin/java /opt/shibboleth-idp/bin/build.sh \
+    -Didp.target.dir=/opt/shibboleth-idp \
+    -Didp.host.name=idp.localhost \
+    -Didp.scope=localhost \
+    -Didp.keystore.password=test \ 
+    -Didp.sealer.password=test
 
 RUN apt-get install htop lsof -y # TODO: rm after debug
